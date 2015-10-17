@@ -1,0 +1,10 @@
+{
+  "applications": {
+    "Arivale Scheduler": {
+      "applicationId": "yrmnWsvqmisRvYoQCCnrjOQwtLPbE51vi28tJ5t9"
+    },
+    "_default": {
+      "link": "Arivale Scheduler"
+    }
+  }
+}
