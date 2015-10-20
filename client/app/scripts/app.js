@@ -1,15 +1,7 @@
 'use strict';
 
-/**
- * @ngdoc overview
- * @name clientApp
- * @description
- * # clientApp
- *
- * Main module of the application.
- */
 angular
-  .module('clientApp', [
+  .module('schedApp', [
     'ngAnimate',
     'ngCookies',
     'ngResource',
@@ -21,7 +13,16 @@ angular
     $routeProvider
       .when('/', {
         templateUrl: 'views/main.html',
-        controller: 'MainCtrl'
+        controller: 'MainCtrl',
+        resolve: {
+          coachAvailability: function (parseFunctions, $window) {
+            var moment = $window.moment;
+            return parseFunctions.getCoachAvailability(moment(), moment().endOf('month'));
+          },
+          myAppointments: function (parseFunctions) {
+            return parseFunctions.getMyAppointments();
+          }
+        }
       })
       .when('/about', {
         templateUrl: 'views/about.html',
@@ -30,4 +31,12 @@ angular
       .otherwise({
         redirectTo: '/'
       });
+  })
+  .run(function (parse) {
+    parse.initialize().then(function () {
+      console.log('All logged in to parse.');
+
+    }, function () {
+      console.log('Had a problem logging into Parse.');
+    });
   });

@@ -21,11 +21,32 @@ module.exports = function (grunt) {
     dist: 'dist'
   };
 
+  var ngConstantConfig = {
+    options: {
+      name: 'schedApp',
+      dest: '<%= yeoman.app %>/scripts/config.js',
+      deps: false,
+    },
+    dev: {
+      values: {
+        parseAppId: 'yrmnWsvqmisRvYoQCCnrjOQwtLPbE51vi28tJ5t9',
+        parseRestKey: 'ZYK3WYuN8iOAe88HGWpT0PjN7lHs6LrUkR78rYhJ'
+      }
+    },
+    dist: {
+      values: {
+        parseAppId: 'yrmnWsvqmisRvYoQCCnrjOQwtLPbE51vi28tJ5t9',
+        parseJsKey: 'ZYK3WYuN8iOAe88HGWpT0PjN7lHs6LrUkR78rYhJ'
+      }
+    }
+  };
+
   // Define the configuration for all the tasks
   grunt.initConfig({
 
     // Project settings
     yeoman: appConfig,
+    ngconstant: ngConstantConfig,
 
     // Watches files for changes and runs tasks based on the changed files
     watch: {
@@ -430,6 +451,7 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
+      'ngconstant:dev',
       'wiredep',
       'concurrent:server',
       'autoprefixer:server',
@@ -454,6 +476,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask('build', [
     'clean:dist',
+    'ngconstant:dist',
     'wiredep',
     'useminPrepare',
     'concurrent:dist',
