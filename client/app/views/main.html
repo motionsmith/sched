@@ -20,6 +20,9 @@
                         <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-xs-12 text-center"><a href ng-click="seeMore(availsAsap)">See more...</a></div>
+                </div>
             </div>
         </div>
         <div class="panel panel-default">
@@ -31,6 +34,9 @@
                     <div class="col-sm-4" ng-repeat="avail in availsMornings">
                         <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
                     </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 text-center"><a href ng-click="seeMore(availsMornings)">See more...</a></div>
                 </div>
             </div>
         </div>
@@ -44,6 +50,9 @@
                         <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-xs-12 text-center"><a href ng-click="seeMore(availsAfternoons)">See more...</a></div>
+                </div>
             </div>
         </div>
         <div class="panel panel-default">
@@ -55,6 +64,9 @@
                     <div class="col-sm-4" ng-repeat="avail in availsLater">
                         <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
                     </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 text-center"><a href ng-click="seeMore(availsLater)">See more...</a></div>
                 </div>
             </div>
         </div>
