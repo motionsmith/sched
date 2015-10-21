@@ -18,71 +18,49 @@ request = {
 Date should be converted to UTC on client.
 Hour is validated to be both available to the coach and within the coach's operating hours.
 */
-Parse.Cloud.define('makeAppointment', function (request, response) {
-	var startDate = moment.utc(request.params.date).startOf('hour');
+Parse.Cloud.beforeSave('appointment', function (request, response) {
+	var appointment = request.object;
+	var startDT = moment.utc(appointment.get('startDate')).startOf('hour');
+	var endDT = startDT.clone().endOf('hour');
 
-	var endDate = startDate.clone();
-	endDate.endOf('hour');
+	//In order for the time to be valid, it must:
+	//1. Be the user's only appointment that month.
+	var onlyApptQuery = new Parse.Query(Appointment);
+	onlyApptQuery.equalTo('client', request.user);
+	onlyApptQuery.greaterThan('startDate', startDT.clone().startOf('month').toDate());
+	onlyApptQuery.lessThan('startDate', endDT.clone().endOf('month').toDate());
 
-	//Get info about this user.
-	var queryUser = new Parse.Query(User);
-	queryUser.include('coach');
-	queryUser.get(request.user.id).then(function (result) {
-		request.user = result;
+	//2. Not conflict with another appointment.
+	var conflictingApptsQuery = new Parse.Query(Appointment);
+	conflictingApptsQuery.equalTo('coach', request.user.get('coach'));
+	conflictingApptsQuery.equalTo('startDate', startDT.toDate());
 
-		//TODO Validate that we didn't schedule on coach's day off.
-		//TODO Validate that we didn't schedule outside of coach's business hours.
-		//TODO Validate that we didn't schedule during a conflicting appointment.
-
-		new Appointment().save({
-			client: request.user,
-			coach: request.user.get('coach'),
-			startDate: startDate.toDate(),
-			endDate: endDate.toDate()
-		});
-	}).then (function (result) {
-		response.success(1);
+	var validApptQuery = Parse.Query.or(onlyApptQuery, conflictingApptsQuery);
+	validApptQuery.find()
+	.then(function (results) {
+		if (results.length === 0) {
+			//3. Be within the coach's work hours.
+			return new Parse.Query(Coach).find(request.user.get('coach').id);
+		} else {
+			return Parse.Promise.error('That time is not available for this user.');
+		}
+	})
+	.then(function (coach) {
+		var coachWorkHours = coach[0].get('workHours');
+		var apptHour = startDT.day()* 24 + startDT.hours();
+		if (coachWorkHours.indexOf(apptHour) !== -1) {
+			appointment.set('client', request.user);
+			appointment.set('coach', request.user.get('coach'));
+			appointment.set('startDate', startDT.toDate());
+			appointment.set('endDate', endDT.toDate());
+			response.success();
+		} else {
+			response.error('Cannot create appointment: Time is not during the coach\'s work hours.');
+		}
 	}, function (error) {
-		response.error('A problem occured while creating an appointment.');
+		response.error(error);
 	});
 });
-
-/*
-Gets a list of appointments that the user's coach has between the given dates.
-request = {
-	from: dateObject,
-	to: dateObject
-};
-@param: (from, to) - The datetime range to request the availability between
-of the coach.
-*/
-/*Parse.Cloud.define('getCoachAppointments', function (request, response) {
-	var fromDT = request.params.from ? moment.utc(request.params.from) : null;
-	var toDT = request.params.to ? moment.utc(request.params.to) : null;
-
-	//Get info about this user.
-	var queryUser = new Parse.Query(User);
-	queryUser.include('coach');
-	queryUser.get(request.user.id).then(function (results) {
-		request.user = results;
-
-		//Get all the user's coach's appointments.
-		var coachAppointmentsQuery = new Parse.Query(Appointment);
-		coachAppointmentsQuery.select('startDate', 'endDate');
-		coachAppointmentsQuery.equalTo('coach', request.user.get('coach'));
-		if (fromDT) {
-			coachAppointmentsQuery.greaterThan('endDate', fromDT.toDate());
-		}
-		if (toDT) {
-			coachAppointmentsQuery.lessThan('startDate', toDT.toDate());
-		}
-		return coachAppointmentsQuery.find();
-	}).then(function (results) {
-		response.success(results);
-	}, function (error) {
-		response.error('A problem occurred while getting the coach\'s appointments.');
-	});
-});*/
 
 /*
 Response looks like this:
@@ -95,8 +73,9 @@ Response looks like this:
 */
 Parse.Cloud.define('getCoachAvailability', function (request, response) {
 	var fromDT = request.params.from ? moment.utc(request.params.from) : moment.utc();
-	console.log("From DT: " + fromDT.format());
-	var toDT = request.params.to ? moment.utc(request.params.to) : moment.utc().add(1, 'M');
+	var toDT = request.params.to ? moment.utc(request.params.to) : null;
+	var coachAppointments;
+	var userAppointments;
 
 	//Get info about this user.
 	var queryUser = new Parse.Query(User);
@@ -109,15 +88,28 @@ Parse.Cloud.define('getCoachAvailability', function (request, response) {
 		coachAppointmentsQuery.select('startDate', 'endDate');
 		coachAppointmentsQuery.equalTo('coach', request.user.get('coach'));
 		coachAppointmentsQuery.greaterThan('endDate', fromDT.toDate());
-		coachAppointmentsQuery.lessThan('startDate', toDT.toDate());
+		if (toDT) {
+			coachAppointmentsQuery.lessThan('startDate', toDT.toDate());
+		}
 		return coachAppointmentsQuery.find();
-	}).then(function (results) {
+	})
+	.then(function (results) {
+		coachAppointments = results;
+
+		var userAppointmentsQuery = new Parse.Query(Appointment);
+		userAppointmentsQuery.equalTo('client', request.user);
+		return userAppointmentsQuery.find();
+	})
+	.then(function (results) {
+		userAppointments = results;
+		
 		//Format the coach's availability
 		response.success(getCoachAvailability(
 			fromDT,
 			toDT,
 			request.user.get('coach').get('workHours'),
-			results));
+			coachAppointments,
+			userAppointments));
 	}, function (error) {
 		response.error('A problem occurred while getting the coach\'s availability.');
 	});
@@ -129,17 +121,25 @@ See the endpoint documentation for 'getCoachAvailability' for the precise respon
 
 @param (workWeekHours) An array represent.ing the general "business hours" that the coach works,
 each number representing a unique hour of that week.
-@param (appointments) These are the appointments that the coach has, directly from the DB.
+@param (coachApopintments) These are the appointments that the coach has, directly from the DB.
 */
-function getCoachAvailability(fromDT, toDT, workWeekHours, appointments) {
+function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, userAppointments, limit) {
+	if (!toDT) {
+		toDT = moment().add(6, 'months');
+
+		if (!limit) {
+			limit = 100;
+		}
+	}
+
 	function isOutsideWorkHours(dt, workWeekHours) {
 		var proposedWeekHour = dt.days() * 24 + dt.hours();
 		return workWeekHours.indexOf(proposedWeekHour) === -1;
 	}
 
-	function isDuringAppointment(dt, appointments) {
-		for (var i = 0; i < appointments.length; i++) {
-			var appt = appointments[i];
+	function isDuringCoachAppointment(dt, coachAppointments) {
+		for (var i = 0; i < coachAppointments.length; i++) {
+			var appt = coachAppointments[i];
 			var apptStartDT = moment.utc(appt.get('startDate'));
 			var apptEndDT = moment.utc(appt.get('endDate'));
 
@@ -150,15 +150,31 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, appointments) {
 		return false;
 	}
 
+	function doesUserAlreadyHaveAppointment(dt, userAppointments) {
+		for (var i = 0; i < userAppointments.length; i++) {
+			var appt = userAppointments[i];
+			var apptStartDT = moment.utc(appt.get('startDate'));
+			if (dt.month() === apptStartDT.month()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	var availability  = {};
-	for (var proposedDT = fromDT.clone().startOf('hour'); proposedDT.isBefore(toDT); proposedDT.add(1, 'h')) {
+	var numAvailabilities = 0;
+	for (var proposedDT = fromDT.clone().startOf('hour'); proposedDT.isBefore(toDT) || numAvailabilities < limit; incrementDT(proposedDT)) {
 		//First, in order for a time to be available, it must not be outside of work hours
 		if (isOutsideWorkHours(proposedDT, workWeekHours)) {
 			continue;
 		}
 
 		//Second, it must not be during another appointment.
-		if (isDuringAppointment(proposedDT, appointments)) {
+		if (isDuringCoachAppointment(proposedDT, coachAppointments)) {
+			continue;
+		}
+
+		if (doesUserAlreadyHaveAppointment(proposedDT, userAppointments)) {
 			continue;
 		}
 
@@ -167,6 +183,19 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, appointments) {
 			availability[date] = [];
 		}
 		availability[date].push(proposedDT.hours());
+		numAvailabilities++;
+	}
+
+	function incrementDT(dt) {
+		var oldHours = dt.hours();
+		dt.add(1, 'h');
+		if (oldHours === dt.hours()) {
+			console.log('daylight savings ended.');
+			dt.add(1, 'h');
+		} else if (dt.hours() - oldHours > 1) {
+			console.log('daylight savings began.');
+			dt.subtract(dt.hours() - oldHours, 'h');
+		}
 	}
 
 	return availability;

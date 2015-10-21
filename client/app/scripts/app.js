@@ -15,12 +15,14 @@ angular
         templateUrl: 'views/main.html',
         controller: 'MainCtrl',
         resolve: {
-          coachAvailability: function (parseFunctions, $window) {
-            var moment = $window.moment;
-            return parseFunctions.getCoachAvailability(moment(), moment().endOf('month'));
+          coachAvailability: function (parseFunctions) {
+            return parseFunctions.getCoachAvailability();
           },
           myAppointments: function (parseFunctions) {
             return parseFunctions.getMyAppointments();
+          },
+          myCoach: function (parseFunctions) {
+            return parseFunctions.getCoach();
           }
         }
       })

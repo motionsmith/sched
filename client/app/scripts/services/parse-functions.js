@@ -5,12 +5,15 @@ angular.module('schedApp')
     var moment = $window.moment;
 
     var getCoachAvailability = function (fromDT, toDT) {
+      if (!fromDT) {
+        fromDT = moment();
+      }
       return $http({
         method: 'POST',
         url: parse.apiUrl + 'functions/getCoachAvailability',
         data: {
           from: fromDT.utc().format(),
-          to: toDT.utc().format()
+          to: toDT ? toDT.utc().format() : null
         },
         headers: parse.getUserHeaders(),
         transformResponse: function(response) {
@@ -65,8 +68,38 @@ angular.module('schedApp')
       });
     };
 
+    var makeAppointment = function (dt) {
+      return $http({
+        method: 'POST',
+        url: parse.apiUrl + 'classes/appointment',
+        data: {
+          startDate: {__type: 'Date', iso: dt.clone().utc().format()},
+        },
+        headers: parse.getUserHeaders()
+      });
+    };
+
+    var getCoach = function () {
+      return $http({
+        method: 'GET',
+        url: parse.apiUrl + 'classes/coach/' + parse.user.coach.objectId,
+        headers: parse.getUserHeaders()
+      });
+    };
+
+    var cancelAppointment = function (apptId) {
+      return $http({
+        method: 'DELETE',
+        url: parse.apiUrl + 'classes/appointment/' + apptId,
+        headers: parse.getUserHeaders()
+      });
+    };
+
     return {
       getCoachAvailability: getCoachAvailability,
-      getMyAppointments: getMyAppointments
+      getMyAppointments: getMyAppointments,
+      makeAppointment: makeAppointment,
+      getCoach: getCoach,
+      cancelAppointment: cancelAppointment
     };
   });

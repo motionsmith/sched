@@ -1,23 +1,82 @@
-<div class="jumbotron">
-  <h1>'Allo, 'Allo!</h1>
-  <p class="lead">
-    <img src="images/yeoman.png" alt="I'm Yeoman"><br>
-    Always a pleasure scaffolding your apps.
-  </p>
-  <p><a class="btn btn-lg btn-success" ng-href="#/">Splendid!<span class="glyphicon glyphicon-ok"></span></a></p>
+<div id="scheduler">
+    <ul class="nav nav-pills nav-justified">
+        <li ng-init="tab = 0" ng-click="tab=0" ng-class="{active: tab === 0}"><a href>Scheduler</a></li>
+        <li a ng-click="tab = 1" ng-class="{active: tab === 1}"><a href>My appointments</a></li>
+    </ul>
+
+    <!-- Scheduler tab -->
+    <div ng-show="tab === 0" class="tab-content">
+        <div ng-show="myAppts.length > 0" class="alert alert-info"><strong>You are already scheduled for <a href ng-click="tab = 1">{{myAppts.length}} <ng-pluralize count="myAppts.length" when="{'1': 'appointment', 'other': 'appointments'}"></ng-pluralize></a></strong>. This might affect the availabilities below.</div>
+
+        <h2>Let's meet.</h2>
+        <p>Schedule regular appointments with your coach to set a strong foundation and get the most out of Arivale.<br/>Check out what we have available with your coach, <strong>{{coachName}}</strong>.</p>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">ASAP Availabilities</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row avail-group">
+                    <div class="col-sm-4" ng-repeat="avail in availsAsap">
+                        <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Morning Availabilities</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row avail-group">
+                    <div class="col-sm-4" ng-repeat="avail in availsMornings">
+                        <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Afternoon Availabilities</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row avail-group">
+                    <div class="col-sm-4" ng-repeat="avail in availsAfternoons">
+                        <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Availabilities in a week or so</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row avail-group">
+                    <div class="col-sm-4" ng-repeat="avail in availsLater">
+                        <div ng-click="makeAppointment(avail)" class="well well-sm text-center" ng-class="{disabled: refreshingData}">{{avail.calendar()}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments tab -->
+    <div ng-show="tab === 1" class="tab-content">
+        <div ng-show="myAppts.length === 0" class="alert alert-danger"><strong>You have no appointments.</strong>. Why don't we <a href ng-click="tab = 0">set something up?</a></div>
+
+        <div ng-show="myAppts.length > 0">
+            <h2>You're booked.</h2>
+            <p>You can schedule appointments with your coach up to six months in advance.<br/>Here's what we have for you.</p>
+        </div>
+
+        <div class="row appt-group" ng-show="myAppts.length > 0">
+            <div class="col-sm-4" ng-repeat="appt in myAppts">
+                <div class="well well-sm text-center">
+                    <div class="appt-content"><span class="v-center">{{printAppointment(appt)}} with {{coachName}}</span></div>
+                    <div><button type="button" class="btn btn-danger btn-xs btn-block cancel-button" ng-class="{'disabled': refreshingData}" ng-click="cancelAppointment(appt)">Cancel</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="row marketing">
-  <h4>HTML5 Boilerplate</h4>
-  <p>
-    HTML5 Boilerplate is a professional front-end template for building fast, robust, and adaptable web apps or sites.
-  </p>
-
-  <h4>Angular</h4>
-  <p>
-    AngularJS is a toolset for building the framework most suited to your application development.
-  </p>
-
-  <h4>Karma</h4>
-  <p>Spectacular Test Runner for JavaScript.</p>
-</div>

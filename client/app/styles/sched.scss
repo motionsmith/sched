@@ -1,0 +1,33 @@
+#scheduler {
+	.tab-content {
+		margin-top: 10px;
+	}
+	.avail-group {
+		.well {
+			cursor: pointer;
+			margin: 0 5px 10px 5px;
+			height: 160px;
+		}
+		.well.disabled {
+			opacity: .25;
+		}
+	}
+
+	.appt-group {
+		.well {
+			margin: 0 5px 10px 5px;
+			height: 160px;
+		}
+		.appt-content {
+			height: 118px;
+			line-height: 100px;
+    		text-align: center;
+
+    		.v-center {
+    			display: inline-block;
+    			vertical-align: middle;
+    			line-height: normal;  
+    		}
+		}
+	}
+}
