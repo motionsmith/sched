@@ -1,0 +1,19 @@
+<div class="appointment-card" ng-class="{'disabled': disabled}">
+    <div class="ac-header">
+		<div class="pull-left">{{moment|cardDate}}</div>
+		<div class="pull-right">{{moment|cardDay}}</div>
+	</div>
+	<div class="ac-body">
+		<div class="ac-center">
+			<span class="ac-center-content">
+				<div class="ac-time">
+					{{moment|cardTime}}
+				</div>
+				<div class="ac-coach">
+					with {{coachName}}
+				</div>
+			</span>
+		</div>
+		<div class="ac-cancel"><button type="button" class="cancel-btn" ng-hide="disabled" ng-click="onCancelAppt(appt)">CANCEL</button></div>
+	</div>
+</div>

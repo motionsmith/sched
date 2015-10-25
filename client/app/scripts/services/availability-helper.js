@@ -1,12 +1,5 @@
 'use strict';
 
-/**
- * @ngdoc service
- * @name schedApp.myAppointmentsHelper
- * @description
- * # myAppointmentsHelper
- * Service in the schedApp.
- */
 angular.module('schedApp')
   .service('availabilityHelper', function ($window) {
     var moment = $window.moment;

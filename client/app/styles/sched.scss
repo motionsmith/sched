@@ -1,33 +1,27 @@
 #scheduler {
-	.tab-content {
-		margin-top: 10px;
-	}
-	.avail-group {
-		.well {
-			cursor: pointer;
-			margin: 0 5px 10px 5px;
-			height: 160px;
-		}
-		.well.disabled {
-			opacity: .25;
-		}
+	.first-h {
+		margin-top: 0;
 	}
 
-	.appt-group {
-		.well {
-			margin: 0 5px 10px 5px;
-			height: 160px;
-		}
-		.appt-content {
-			height: 118px;
-			line-height: 100px;
-    		text-align: center;
+	.add-appt-btn {
+		cursor: pointer;
+		border: 3px dashed #bbbbbb;
+		border-radius: 8px;
+		height: 160px;
+		
+		/* Vertically aligns content within it */
+		line-height: 150px;
+    	text-align: center;
 
-    		.v-center {
-    			display: inline-block;
-    			vertical-align: middle;
-    			line-height: normal;  
-    		}
+		i {
+			font-size: 48px;
+			color: #bbbbbb;
+			font-weight: 700;
+
+			/* Responsible for vertically aligning the text */
+			display: inline-block;
+    		vertical-align: middle;
+    		line-height: normal;
 		}
 	}
 }

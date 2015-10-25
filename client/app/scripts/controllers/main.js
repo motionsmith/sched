@@ -1,9 +1,9 @@
 'use strict';
 
 angular.module('schedApp')
-  .controller('MainCtrl', function ($q, $scope, coachAvailability, myAppointments, $window, availabilityHelper, parseFunctions, parse, myCoach) {
+  .controller('MainCtrl', function ($q, $scope, coachAvailability, myAppointments, availabilityHelper, parseFunctions, parse, myCoach) {
     $scope.makeAppointment = function (dt) {
-      console.log('make appointment for ' + dt.calendar());
+      $scope.refreshingData = true;
       parseFunctions.makeAppointment(dt).then(function () {
         refreshData().then(function() {
           $scope.tab = 1;
@@ -13,11 +13,8 @@ angular.module('schedApp')
       });
     };
 
-    $scope.printAppointment = function (appt) {
-      return moment(appt.startDate).format();
-    };
-
     $scope.cancelAppointment = function (appt) {
+      $scope.refreshingData = true;
       parseFunctions.cancelAppointment(appt.objectId).then(refreshData);
     };
 
@@ -69,8 +66,6 @@ angular.module('schedApp')
     function processAppointments() {
       $scope.myAppts = myAppointments.data.results;
     }
-
-    var moment = $window.moment;
 
     $scope.coachName = myCoach.data.firstName + ' ' + myCoach.data.lastName;
     $scope.asapLimit = 3;

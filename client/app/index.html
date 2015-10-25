@@ -14,6 +14,8 @@
     <!-- build:css(.tmp) styles/main.css -->
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/sched.css">
+    <link rel="stylesheet" href="styles/availability-card.css">
+    <link rel="stylesheet" href="styles/appointment-card.css">
     <!-- endbuild -->
   </head>
   <body ng-app="schedApp">
@@ -33,15 +35,15 @@
               <span class="icon-bar"></span>
             </button>
 
-            <a class="navbar-brand" href="#/">The thing</a>
+            <a class="navbar-brand" href="#/"><img class="logo" src="images/logo.png" /></a>
           </div>
 
           <div class="collapse navbar-collapse" id="js-navbar-collapse">
 
             <ul class="nav navbar-nav">
               <li class="active"><a href="#/">My Dashboard</a></li>
-              <li><a ng-href="#/about">Profile</a></li>
-              <li><a ng-href="#/">Contact</a></li>
+              <li><a href="http://arivale.com">Profile</a></li>
+              <li><a ng-href="http://arivale.com">Contact</a></li>
             </ul>
           </div>
         </div>
@@ -54,7 +56,7 @@
 
     <div class="footer">
       <div class="container">
-        <p>Don't look now, but <a href="https://facebook.com/motionsmith" target="_blank">ET Smith</a> is over there.</p>
+        <p>Don't look now, but <a href="https://facebook.com/motionsmith" target="_blank">ET Smith</a> is over there. | <span><a href ng-click="regenerateAppts()">Regenerate appointments</a></span></p>
       </div>
     </div>
 
@@ -81,6 +83,10 @@
         <script src="scripts/services/parse-functions.js"></script>
         <script src="scripts/services/parse-config.js"></script>
         <script src="scripts/services/availability-helper.js"></script>
+        <script src="scripts/services/card-date-filter.js"></script>
+        <script src="scripts/directives/availability-card.js"></script>
+        <script src="scripts/directives/appointment-card.js"></script>
+        <script src="scripts/services/color-helper.js"></script>
         <!-- endbuild -->
 </body>
 </html>
