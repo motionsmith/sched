@@ -13,17 +13,18 @@ angular.module('schedApp')
             data.push(moment(key, 'YYYY-MM-DD').hours(availabilities[key][i]));
           }
         }
+        this.numResults = data.length;
       },
       //Sort by date ascending
-      filterSoonest: function (limit) {
+      filterSoonest: function () {
         var results = [];
-        for (var i = 0; i < Math.min(data.length, limit); i++) {
+        for (var i = 0; i < data.length; i++) {
           results.push(data[i]);
         }
         return results;
       },
       //Sort by hours first ascending, then by dates second ascending
-      filterMornings: function (limit) {
+      filterMornings: function () {
         var results = angular.extend([], data);
         results.sort(function (a, b) {
           if (a.hours() < b.hours()) {
@@ -41,10 +42,10 @@ angular.module('schedApp')
           }
         });
 
-        return results.splice(0, limit);
+        return results;
       },
       //Sort by hours first descending, then by dates second ascending.
-      filterAfternoons: function (limit) {
+      filterAfternoons: function () {
         var results = angular.extend([], data);
         results.sort(function (a, b) {
           if (a.hours() < b.hours()) {
@@ -62,10 +63,10 @@ angular.module('schedApp')
           }
         });
 
-        return results.splice(0, limit);
+        return results;
       },
       //Take the soonest ones that are more than a week away.
-      filterLater: function (limit) {
+      filterLater: function () {
         var results = [];
         var aWeekFromNow = moment().add(1, 'week');
         for (var i = 0; i < data.length; i++) {
@@ -74,7 +75,9 @@ angular.module('schedApp')
           }
         }
 
-        return results.splice(0, limit);
-      }
+        return results;
+      },
+
+      numResults: 0
     };
   });

@@ -20,17 +20,13 @@ angular.module('schedApp')
 
     $scope.seeMore = function (avails) {
       if (avails === $scope.availsAsap) {
-        $scope.asapLimit = $scope.availsAsap.length + 6;
-        $scope.availsAsap = availabilityHelper.filterSoonest($scope.asapLimit);
+        $scope.asapLimit += 6;
       } else if (avails === $scope.availsMornings) {
-        $scope.morningsLimit = $scope.availsMornings.length + 6;
-        $scope.availsMornings = availabilityHelper.filterMornings($scope.morningsLimit);
+        $scope.morningsLimit += 6
       } else if (avails === $scope.availsAfternoons) {
-        $scope.afternoonsLimit = $scope.availsAfternoons.length + 6;
-        $scope.availsAfternoons = availabilityHelper.filterAfternoons($scope.afternoonsLimit);
+        $scope.afternoonsLimit += 6;
       } else if (avails === $scope.availsLater) {
-        $scope.laterLimit = $scope.availsLater.length + 6;
-        $scope.availsLater = availabilityHelper.filterLater($scope.laterLimit);
+        $scope.laterLimit += 6;
       }
     };
 
@@ -57,10 +53,11 @@ angular.module('schedApp')
 
     function processAvailabilities() {
       availabilityHelper.initialize(coachAvailability.data.result);
-      $scope.availsAsap = availabilityHelper.filterSoonest($scope.asapLimit);
-      $scope.availsMornings = availabilityHelper.filterMornings(3);
-      $scope.availsAfternoons = availabilityHelper.filterAfternoons(3);
-      $scope.availsLater = availabilityHelper.filterLater(3);
+      $scope.availsAsap = availabilityHelper.filterSoonest();
+      $scope.availsMornings = availabilityHelper.filterMornings();
+      $scope.availsAfternoons = availabilityHelper.filterAfternoons();
+      $scope.availsLater = availabilityHelper.filterLater();
+      $scope.numResults = availabilityHelper.numResults;
     }
 
     function processAppointments() {

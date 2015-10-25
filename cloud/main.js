@@ -23,6 +23,14 @@ Parse.Cloud.beforeSave('appointment', function (request, response) {
 	var startDT = moment.utc(appointment.get('startDate')).startOf('hour');
 	var endDT = startDT.clone().endOf('hour');
 
+	//If a client property is specified, this is a post from the MT,
+	//just ignore validation.
+	var client = appointment.get('client');
+	if (client) {
+		response.success();
+		return;
+	}
+
 	//In order for the time to be valid, it must:
 	//1. Be the user's only appointment that month.
 	var onlyApptQuery = new Parse.Query(Appointment);
@@ -88,6 +96,8 @@ Parse.Cloud.define('getCoachAvailability', function (request, response) {
 		coachAppointmentsQuery.select('startDate', 'endDate');
 		coachAppointmentsQuery.equalTo('coach', request.user.get('coach'));
 		coachAppointmentsQuery.greaterThan('endDate', fromDT.toDate());
+		coachAppointmentsQuery.limit(1000);
+		coachAppointmentsQuery.ascending('startDate')
 		if (toDT) {
 			coachAppointmentsQuery.lessThan('startDate', toDT.toDate());
 		}
@@ -125,10 +135,10 @@ each number representing a unique hour of that week.
 */
 function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, userAppointments, limit) {
 	if (!toDT) {
-		toDT = moment().add(6, 'months');
+		toDT = fromDT.clone().add(1, 'months');
 
 		if (!limit) {
-			limit = 100;
+			limit = 50;
 		}
 	}
 
@@ -138,10 +148,14 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 	}
 
 	function isDuringCoachAppointment(dt, coachAppointments) {
-		for (var i = 0; i < coachAppointments.length; i++) {
+		for (var i = coachAppointments.length - 1; i >= 0; i--) {
 			var appt = coachAppointments[i];
 			var apptStartDT = moment.utc(appt.get('startDate'));
 			var apptEndDT = moment.utc(appt.get('endDate'));
+
+			if (apptStartDT.isBefore(dt)) {
+				coachAppointments.splice(i, 1);
+			}
 
 			if ((dt.isSame(apptStartDT) || dt.isAfter(apptStartDT)) && dt.isBefore(apptEndDT)) {
 				return true;
@@ -161,9 +175,10 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 		return false;
 	}
 
+	var lowerLimit = 18;
 	var availability  = {};
 	var numAvailabilities = 0;
-	for (var proposedDT = fromDT.clone().startOf('hour'); proposedDT.isBefore(toDT) || numAvailabilities < limit; incrementDT(proposedDT)) {
+	for (var proposedDT = fromDT.clone().startOf('hour'); (proposedDT.isBefore(toDT) && numAvailabilities < limit) || numAvailabilities < lowerLimit; proposedDT.add(1, 'h')) {
 		//First, in order for a time to be available, it must not be outside of work hours
 		if (isOutsideWorkHours(proposedDT, workWeekHours)) {
 			continue;
@@ -182,21 +197,74 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 		if (availability.hasOwnProperty(date) === false) {
 			availability[date] = [];
 		}
+
 		availability[date].push(proposedDT.hours());
 		numAvailabilities++;
 	}
 
-	function incrementDT(dt) {
-		var oldHours = dt.hours();
-		dt.add(1, 'h');
-		if (oldHours === dt.hours()) {
-			console.log('daylight savings ended.');
-			dt.add(1, 'h');
-		} else if (dt.hours() - oldHours > 1) {
-			console.log('daylight savings began.');
-			dt.subtract(dt.hours() - oldHours, 'h');
-		}
-	}
-
 	return availability;
 }
+
+/* 
+Makes the calendar look more realistically filled out.
+Automatically schedules appointments, with higher frequency for dates closer to now.
+*/
+Parse.Cloud.define('fillSchedule', function(request, response) {
+	Parse.Cloud.run('getCoachAvailability').then(function (result) {
+		var apptsByDate = result;
+		var apptsToBook = [];
+		for (var dateStr in apptsByDate) {
+			if (!apptsByDate.hasOwnProperty(dateStr)) {
+				continue;
+			}
+			var apptsOfDay = apptsByDate[dateStr];
+			apptsOfDay.forEach(function (hr) {
+				var apptDT = moment(dateStr, 'YYYY-MM-DD').hours(hr);
+				if (shouldBookSomething(apptDT)) {
+					console.log('booking something at ' + apptDT.calendar());
+					var apptEndDT = apptDT.clone().endOf('hour');
+					var appt = new Appointment();
+					appt.set('startDate', apptDT.toDate());
+					appt.set('client', {'__type': 'Pointer', className: '_User', objectId: 'RgfVS4n3jZ'});
+					appt.set('coach', {'__type': 'Pointer', className: 'coach', objectId: 'HWGQluAERq'});
+					appt.set('endDate', apptEndDT.toDate());
+
+					apptsToBook.push(appt);
+				}
+			});
+		}
+
+		return Parse.Object.saveAll(apptsToBook);
+	})
+	.then(function (result) {
+		response.success();
+	}, function (error) {
+		response.error(error);
+	});
+
+	/*
+	Given a time in hours from now, returns a probability of booking at that time (0-1).
+	Probability (y) goes up in parabolic form as time goes forward. (x)
+	*/
+	function bookingProbability(x) {
+		var a = 0.00000003;
+		var b = 0.0000001;
+		var c = 0.1;
+
+		//Parabolic probability (ax^2 + bx + c)
+		//0 < x < 4400 hours (6 months)
+		//0 < y < 1 probability
+		return Math.pow(a*x, 2) + b*x + c;
+	}
+
+	/* Returns (boolean) whether or not to create an appointment at the given time.
+	Based on decreasing probability function from now. */
+	function shouldBookSomething(dt) {
+		var msFromNow = dt.diff(moment());
+		var durationFromNow = moment.duration(msFromNow);
+		var hrsFromNow = durationFromNow.asHours();
+		var bookingProb = bookingProbability(hrsFromNow);
+		var b = Math.random() > bookingProb;
+		return b;
+	}
+})
