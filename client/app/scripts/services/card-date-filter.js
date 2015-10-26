@@ -2,13 +2,8 @@
 
 angular.module('schedApp')
   .filter('cardDate', function ($window) {
-  	var moment = $window.moment;
     return function (input) {
-    	if (input.year() === moment().year()) {
-    		return input.format('MMM D');
-    	} else {
-    		return input.format('MMM D YYYY');
-    	}
+    	return input.format('MMM D');
     };
   })
   .filter('cardDay', function () {
@@ -20,4 +15,9 @@ angular.module('schedApp')
   	return function (input) {
   		return input.format('h A');
   	};
+  })
+  .filter('cardTimeToNow', function () {
+    return function (input) {
+      return input.fromNow();
+    }
   });
