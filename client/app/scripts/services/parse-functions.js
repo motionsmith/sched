@@ -12,8 +12,7 @@ angular.module('schedApp')
         method: 'POST',
         url: parse.apiUrl + 'functions/getCoachAvailability',
         data: {
-          from: fromDT.utc().format(),
-          to: toDT ? toDT.utc().format() : null
+          from: fromDT.utc().format()
         },
         headers: parse.getUserHeaders(),
         transformResponse: function(response) {
@@ -49,7 +48,9 @@ angular.module('schedApp')
         method: 'GET',
         url: parse.apiUrl + 'classes/appointment',
         params: {
-          where: {client: parse.pointerFor(parse.user)}
+          where: {
+            client: parse.pointerFor(parse.user)
+          }
         },
         headers: parse.getUserHeaders(),
         transformResponse: function (response) {

@@ -12,10 +12,7 @@ Cuts off the minutes, seconds, and milliseconds, so the times are on the hour.
 
 /*
 Makes an appointment between the user who makes the query and the user's coach.
-request = {
-	date: dateObject
-};
-@param: (date) Minutes/seconds get zeroed off (or not used).
+@param: (date) Gets rounded to the start of the hour.
 Date should be converted to UTC on client.
 Hour is validated to be both available to the coach and within the coach's operating hours.
 */
@@ -90,8 +87,6 @@ Response looks like this:
 */
 Parse.Cloud.define('getCoachAvailability', function (request, response) {
 	var fromDT = request.params.from ? moment(request.params.from) : moment();
-	var toDT = request.params.to ? moment(request.params.to) : null;
-	var limit = request.params.limit ? request.params.limit : 50;
 	var coachAppointments;
 	var userAppointments;
 
@@ -108,9 +103,6 @@ Parse.Cloud.define('getCoachAvailability', function (request, response) {
 		coachAppointmentsQuery.greaterThan('endDate', fromDT.toDate());
 		coachAppointmentsQuery.limit(1000);
 		coachAppointmentsQuery.ascending('startDate')
-		if (toDT) {
-			coachAppointmentsQuery.lessThan('startDate', toDT.toDate());
-		}
 		return coachAppointmentsQuery.find();
 	})
 	.then(function (results) {
@@ -126,11 +118,9 @@ Parse.Cloud.define('getCoachAvailability', function (request, response) {
 		//Format the coach's availability
 		response.success(getCoachAvailability(
 			fromDT,
-			toDT,
 			request.user.get('coach').get('workHours'),
 			coachAppointments,
-			userAppointments,
-			limit));
+			userAppointments));
 	}, function (error) {
 		response.error('A problem occurred while getting the coach\'s availability.');
 	});
@@ -144,28 +134,24 @@ See the endpoint documentation for 'getCoachAvailability' for the precise respon
 each number representing a unique hour of that week.
 @param (coachApopintments) These are the appointments that the coach has, directly from the DB.
 */
-function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, userAppointments, limit) {
-	if (!toDT) {
-		lastAppointment = coachAppointments[coachAppointments.length - 1];
-		toDT = moment(lastAppointment.get('endDate')).endOf('hour');
+function getCoachAvailability(fromDT, workWeekHours, coachAppointments, userAppointments) {
+	var lastAppointment = coachAppointments[coachAppointments.length - 1];
+	var toDT = moment(lastAppointment.get('endDate')).endOf('hour');
 
-		if (!limit) {
-			limit = 50;
-		}
-	}
-
-	limit = 1000;
-
+	/* Make a temp version of the coach's work hours for DST */
 	var dstWorkWeekHours = workWeekHours.map(function(hr) {
 		return hr - 1;
 	});
 
+	/* Returns true if the given datetime is outside of work hours. */
 	function isOutsideWorkHours(dt, workWeek) {
 		var proposedWeekHour = dt.days() * 24 + dt.hours();
 		
 		return workWeek.indexOf(proposedWeekHour) === -1;
 	}
 
+	/* Returns true of the user already has an appointment in the same
+	month as the given datetime. */
 	function doesUserAlreadyHaveAppointment(dt, userAppointments) {
 		for (var i = 0; i < userAppointments.length; i++) {
 			var appt = userAppointments[i];
@@ -180,7 +166,13 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 	var lowerLimit = 18;
 	var availability  = {};
 
-	//Populate the coach's appointemnts all at once.
+	//Populate the coach's appointemnts into the availabilities column,
+	//before checking availabilities.
+	//We will actually use them while populating the availabilities as a
+	//way of making sure to not make that time available.
+	//
+	//Doing it this way is linear time-complexity as opposed to quadratic if you were to check
+	//each availability against each coach appointment.
 	for (var i = 0; i < coachAppointments.length; i++) {
 		var coachAppt = coachAppointments[i];
 		var coachApptStart = moment(coachAppt.get('startDate'));
@@ -188,16 +180,19 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 		if (availability.hasOwnProperty(dateKey) === false) {
 			availability[dateKey] = [];
 		}
-		availability[dateKey].push(coachApptStart.hours()*-1);
+		availability[dateKey].push(coachApptStart.hours());
 	}
 
 	var numAvailabilities = 0;
-	for (var proposedDT = fromDT.clone().startOf('hour'); (proposedDT.isBefore(toDT) && numAvailabilities < limit) || numAvailabilities < lowerLimit; proposedDT.add(1, 'h')) {
+	for (var proposedDT = fromDT.clone().startOf('hour'); (proposedDT.isBefore(toDT) && numAvailabilities < 1000) || numAvailabilities < lowerLimit; proposedDT.add(1, 'h')) {
 		var dateKey = proposedDT.format('YYYY-MM-DD');
 		var proposedHour = proposedDT.hours();
 
+		//Here, if we see that this availability already has a spot,
+		//that means the coach already has an appointment here.
+		//We remove it from the list of availabilities.
 		if (availability.hasOwnProperty(dateKey)) {
-			var indexOfTime = availability[dateKey].indexOf(proposedHour*-1);
+			var indexOfTime = availability[dateKey].indexOf(proposedHour);
 			if (indexOfTime !== -1) {
 				availability[dateKey].splice(indexOfTime, 1);
 				continue;
@@ -209,14 +204,15 @@ function getCoachAvailability(fromDT, toDT, workWeekHours, coachAppointments, us
 			continue;
 		}
 
+		//Second, the user must not already have a conflicting appointment (within that month).
 		if (doesUserAlreadyHaveAppointment(proposedDT, userAppointments)) {
 			continue;
 		}
 		
+		//Finally, it has passed all the tests, and gets added to the list of availabilities.
 		if (availability.hasOwnProperty(dateKey) === false) {
 			availability[dateKey] = [];
 		}
-
 		availability[dateKey].push(proposedHour);
 		numAvailabilities++;
 	}
@@ -233,25 +229,25 @@ Parse.Cloud.define('fillSchedule', function(request, response) {
 	var queryUser = new Parse.Query(User);
 	queryUser.include('coach');
 	queryUser.get(request.user.id).then(function (results) {
+
 		var user = results;
 		var coach = user.get('coach');
 		var workHours = coach.get('workHours');
-		var dstWorkHours = workHours.map(function (hr) {
-			return hr - 0;
-		});
 
 		var currDT = moment().startOf('hour');
 		var endDT = moment().startOf('hour').add(4, 'months');
 		var apptsToBook = [];
 
+		/* Loop through every hour between currDT and endDT.
+		All valid hours are randomly booked (or not). */
 		while (currDT.isBefore(endDT)) {
 			var currWeekHour = currDT.days() * 24 + currDT.hours();
-			var currWorkHours = currDT.isBefore(dstEnds) ? dstWorkHours : workHours;
-			if (currWorkHours.indexOf(currWeekHour) === -1) {
+			if (workHours.indexOf(currWeekHour) === -1) {
 				currDT = currDT.add(1, 'hour');
 				continue;
 			}
 
+			/* Randomly determine whether or not to book this hour. */
 			if (scheduleFillerAppointment(currDT)) {
 				var apptEndDT = currDT.clone().endOf('hour');
 				var appt = new Appointment();
@@ -265,6 +261,7 @@ Parse.Cloud.define('fillSchedule', function(request, response) {
 			currDT.add(1, 'hour');
 		}
 
+		/* Create all appointments at the same time. Saves DB requests and money. */
 		return Parse.Object.saveAll(apptsToBook);
 	})
 	.then(function() {
