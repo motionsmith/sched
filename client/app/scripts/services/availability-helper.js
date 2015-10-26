@@ -6,6 +6,8 @@ angular.module('schedApp')
     var data = [];
 
     return {
+      /* Ingest the availabilities data given by the server,
+      And transform it into a series of moment objects */
       initialize: function (availabilities) {
         data = [];
         for (var key in availabilities) {

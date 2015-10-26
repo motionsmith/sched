@@ -1,7 +1,8 @@
 'use strict';
 
 angular.module('schedApp')
-  .directive('appointmentCard', function (colorHelper) {
+  .directive('appointmentCard', function (colorHelper, $window) {
+    var moment = $window.moment;
     return {
       templateUrl: 'views/appointment-card.html',
       restrict: 'E',

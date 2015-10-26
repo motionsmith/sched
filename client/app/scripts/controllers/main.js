@@ -2,6 +2,8 @@
 
 angular.module('schedApp')
   .controller('MainCtrl', function ($q, $scope, coachAvailability, myAppointments, availabilityHelper, parseFunctions, parse, myCoach) {
+
+    /* Attempts to make an appointment at the given moment */
     $scope.makeAppointment = function (dt) {
       $scope.refreshingData = true;
       parseFunctions.makeAppointment(dt).then(function () {
@@ -13,16 +15,18 @@ angular.module('schedApp')
       });
     };
 
+    /* Attempts to cancel the given appointment. */
     $scope.cancelAppointment = function (appt) {
       $scope.refreshingData = true;
       parseFunctions.cancelAppointment(appt.objectId).then(refreshData);
     };
 
+    /* Make more availability cards visible in the given category. */
     $scope.seeMore = function (avails) {
       if (avails === $scope.availsAsap) {
         $scope.asapLimit += 6;
       } else if (avails === $scope.availsMornings) {
-        $scope.morningsLimit += 6
+        $scope.morningsLimit += 6;
       } else if (avails === $scope.availsAfternoons) {
         $scope.afternoonsLimit += 6;
       } else if (avails === $scope.availsLater) {
@@ -30,6 +34,7 @@ angular.module('schedApp')
       }
     };
 
+    /* Gets all available appointment slots and the user's appointments. */
     function refreshData() {
       $scope.refreshingData = true;
       var refreshPromises = [];
@@ -46,11 +51,13 @@ angular.module('schedApp')
       }, function (error) {
         $scope.refreshingData = false;
         console.log('There was a problem refreshing the data: ' + error);
+        $scope.refreshingData = false;
       });
 
       return all;
     }
 
+    /* Transforms the availability data into a format that is ideal for the UI. */
     function processAvailabilities() {
       availabilityHelper.initialize(coachAvailability.data.result);
       $scope.availsAsap = availabilityHelper.filterSoonest();
@@ -60,10 +67,14 @@ angular.module('schedApp')
       $scope.numResults = availabilityHelper.numResults;
     }
 
+    /* Makes the appointments data available to the UI */
     function processAppointments() {
       $scope.myAppts = myAppointments.data.results;
     }
 
+    /*
+    KICK THINGS OFF
+    */
     $scope.coachName = myCoach.data.firstName + ' ' + myCoach.data.lastName;
     $scope.asapLimit = 3;
     $scope.morningsLimit = 3;

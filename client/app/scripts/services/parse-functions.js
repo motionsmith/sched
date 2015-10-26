@@ -4,7 +4,7 @@ angular.module('schedApp')
   .service('parseFunctions', function ($http, parse, $window) {
     var moment = $window.moment;
 
-    var getCoachAvailability = function (fromDT, toDT) {
+    var getCoachAvailability = function (fromDT) {
       if (!fromDT) {
         fromDT = moment();
       }

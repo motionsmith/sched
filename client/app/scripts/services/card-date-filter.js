@@ -1,7 +1,8 @@
 'use strict';
 
+/* Filters that print moment objects into formats for the UI */
 angular.module('schedApp')
-  .filter('cardDate', function ($window) {
+  .filter('cardDate', function () {
     return function (input) {
     	return input.format('MMM D');
     };
@@ -19,5 +20,5 @@ angular.module('schedApp')
   .filter('cardTimeToNow', function () {
     return function (input) {
       return input.fromNow();
-    }
+    };
   });

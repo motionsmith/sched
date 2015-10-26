@@ -269,6 +269,7 @@ Parse.Cloud.define('fillSchedule', function(request, response) {
 	}, function (error) {
 		response.error(error);
 	});
+	
 	/*
 	Given a time in hours from now, returns a probability of booking at that time (0-1).
 	Probability (y) goes up in parabolic form as time goes forward. (x)

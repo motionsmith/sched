@@ -15,6 +15,7 @@ angular.module('schedApp')
         'X-Parse-Application-Id': parseAppId,
           'X-Parse-REST-API-Key': parseRestKey
       },
+
       getUserHeaders: function () {
         var sessionToken = getSessionToken();
         if (sessionToken) {
@@ -22,8 +23,10 @@ angular.module('schedApp')
         }
         return null;
       },
+
       apiUrl: 'https://api.parse.com/1/',
       user: null,
+
       initialize: function() {
         var userCookie = $cookies.getObject('user');
         if (userCookie) {
@@ -35,10 +38,12 @@ angular.module('schedApp')
           return login('motionsmith', 'test');
         }
       },
+
       logOut: function () {
         $cookies.remove('user');
         parse.user = null;
       },
+      
       // Creates a REST friendly "pointer" object that parse uses to
       // refer to pointer type columns.
       pointerFor: function() {
@@ -51,17 +56,17 @@ angular.module('schedApp')
         //The argument is a parse object. Pointer can be derived from it.
         className = arguments[0].className;
         objId = arguments[0].id;
-      } else {
-        // Arguments are the class name and object id.
-        className = arguments[0];
-        objId = arguments[1];
-      }
+        } else {
+          // Arguments are the class name and object id.
+          className = arguments[0];
+          objId = arguments[1];
+        }
 
-      return {
-        '__type': 'Pointer',
-        'className': className,
-        'objectId': objId
-      };
+        return {
+          '__type': 'Pointer',
+          'className': className,
+          'objectId': objId
+        };
       }
     };
 
