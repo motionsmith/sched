@@ -1,4 +1,4 @@
-'use strict';
+  'use strict';
 
 angular
   .module('schedApp', [
@@ -23,6 +23,9 @@ angular
           },
           myCoach: function (parseFunctions) {
             return parseFunctions.getCoach();
+          },
+          loggedIn: function (parse) {
+            return parse.loginPromise;
           }
         }
       })
@@ -36,5 +39,6 @@ angular
 
     }, function () {
       console.log('Had a problem logging into Parse.');
+      parse.logOut();
     });
   });

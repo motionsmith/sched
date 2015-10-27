@@ -36,7 +36,7 @@ module.exports = function (grunt) {
     dist: {
       values: {
         parseAppId: 'yrmnWsvqmisRvYoQCCnrjOQwtLPbE51vi28tJ5t9',
-        parseJsKey: 'ZYK3WYuN8iOAe88HGWpT0PjN7lHs6LrUkR78rYhJ'
+        parseRestKey: 'ZYK3WYuN8iOAe88HGWpT0PjN7lHs6LrUkR78rYhJ'
       }
     }
   };
@@ -409,6 +409,13 @@ module.exports = function (grunt) {
           cwd: '.',
           src: 'bower_components/bootstrap-sass-official/assets/fonts/bootstrap/*',
           dest: '<%= yeoman.dist %>'
+        }, {
+          expand: true,
+          cwd: '<%= yeoman.app %>/images',
+          dest: '<%= yeoman.dist %>/images',
+          src: [
+            '*.*'
+          ]
         }]
       },
       styles: {
@@ -429,8 +436,6 @@ module.exports = function (grunt) {
       ],
       dist: [
         'compass:dist',
-        'imagemin',
-        'svgmin'
       ]
     },
 

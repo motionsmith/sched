@@ -32,16 +32,13 @@ angular.module('schedApp')
         if (userCookie) {
           this.user = userCookie;
           console.log('Have session token for ' + this.user.username + '. Checking if it\'s still valid.');
-          return getMe();
+          this.loginPromise = getMe();
         } else {
           console.log('Not loggd in. Logging in automatically.');
-          return login('motionsmith', 'test');
+          this.loginPromise = login('motionsmith', 'test');
         }
-      },
 
-      logOut: function () {
-        $cookies.remove('user');
-        parse.user = null;
+        return this.loginPromise;
       },
       
       // Creates a REST friendly "pointer" object that parse uses to
@@ -67,7 +64,14 @@ angular.module('schedApp')
           'className': className,
           'objectId': objId
         };
-      }
+      },
+
+      logOut: function () {
+        $cookies.remove('user');
+        parse.user = null;
+      },
+
+      loginPromise: null
     };
 
     function login(username, password) {

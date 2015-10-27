@@ -135,8 +135,8 @@ each number representing a unique hour of that week.
 @param (coachApopintments) These are the appointments that the coach has, directly from the DB.
 */
 function getCoachAvailability(fromDT, workWeekHours, coachAppointments, userAppointments) {
-	var lastAppointment = coachAppointments[coachAppointments.length - 1];
-	var toDT = moment(lastAppointment.get('endDate')).endOf('hour');
+	
+	toDT = fromDT.clone().add(4, 'months');
 
 	/* Make a temp version of the coach's work hours for DST */
 	var dstWorkWeekHours = workWeekHours.map(function(hr) {
@@ -184,7 +184,7 @@ function getCoachAvailability(fromDT, workWeekHours, coachAppointments, userAppo
 	}
 
 	var numAvailabilities = 0;
-	for (var proposedDT = fromDT.clone().startOf('hour'); (proposedDT.isBefore(toDT) && numAvailabilities < 1000) || numAvailabilities < lowerLimit; proposedDT.add(1, 'h')) {
+	for (var proposedDT = fromDT.clone().startOf('hour'); (proposedDT.isBefore(toDT) && numAvailabilities < 200) || numAvailabilities < lowerLimit; proposedDT.add(1, 'h')) {
 		var dateKey = proposedDT.format('YYYY-MM-DD');
 		var proposedHour = proposedDT.hours();
 
@@ -241,13 +241,14 @@ Parse.Cloud.define('fillSchedule', function(request, response) {
 		/* Loop through every hour between currDT and endDT.
 		All valid hours are randomly booked (or not). */
 		while (currDT.isBefore(endDT)) {
-			var currWeekHour = currDT.days() * 24 + currDT.hours();
+			/*var currWeekHour = currDT.days() * 24 + currDT.hours();
 			if (workHours.indexOf(currWeekHour) === -1) {
 				currDT = currDT.add(1, 'hour');
 				continue;
-			}
+			}*/
 
 			/* Randomly determine whether or not to book this hour. */
+
 			if (scheduleFillerAppointment(currDT)) {
 				var apptEndDT = currDT.clone().endOf('hour');
 				var appt = new Appointment();
@@ -275,9 +276,9 @@ Parse.Cloud.define('fillSchedule', function(request, response) {
 	Probability (y) goes up in parabolic form as time goes forward. (x)
 	*/
 	function bookingProbability(x) {
-		var a = 0.0000003;
+		var a = 0.00000009;
 		var b = 0.0000001;
-		var c = 0.1;
+		var c = 0.03;
 
 		//Parabolic probability (ax^2 + bx + c)
 		//0 < x < 4400 hours (6 months)
