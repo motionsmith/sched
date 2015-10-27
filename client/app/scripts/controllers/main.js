@@ -41,6 +41,7 @@ angular.module('schedApp')
       refreshPromises.push(parseFunctions.getMyAppointments());
       refreshPromises.push(parseFunctions.getCoachAvailability());
 
+      //Send both requests off at the same time. Callback after both return.
       var all = $q.all(refreshPromises);
       all.then(function(responses) {
         $scope.refreshingData = false;
